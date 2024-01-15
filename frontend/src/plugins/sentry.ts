@@ -1,9 +1,14 @@
-import * as Sentry from "@sentry/browser"
+import { defineNuxtPlugin } from "#imports"
 
-/**
- * adds render context to the error event that is sent to sentry
- */
-
-Sentry.setContext("render context", {
-  platform: process.client ? "client" : "server",
+export default defineNuxtPlugin(() => {
+  const sentry = {
+    captureException: (error: unknown, extra: unknown) => {
+      console.log("Sentry fallback for captureException", error, extra)
+    },
+  }
+  return {
+    provide: {
+      sentry,
+    },
+  }
 })

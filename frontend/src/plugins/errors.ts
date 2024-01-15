@@ -1,9 +1,12 @@
+import { defineNuxtPlugin } from "#imports"
+
 import axios from "axios"
-import { Plugin, Context } from "@nuxt/types"
 
 import { ERR_UNKNOWN, ErrorCode, errorCodes } from "~/constants/errors"
 import type { FetchingError, RequestKind } from "~/types/fetch-state"
 import type { SupportedSearchType } from "~/constants/media"
+
+import type { NuxtApp } from "#app"
 
 const isValidErrorCode = (
   code: string | undefined | null
@@ -69,12 +72,14 @@ export function normalizeFetchingError(
 /**
  * Record network errors using the appropriate tool, as needed,
  * based on response code, status, and request kind.
- * @param error - The error to record
+ * @param originalError - the original error, usually an AxiosError
+ * @param fetchingError - the normalized error object
+ * @param nuxtApp - the context object
  */
-function recordError(
-  context: Context,
+export function recordError(
   originalError: unknown,
-  fetchingError: FetchingError
+  fetchingError: FetchingError,
+  nuxtApp: NuxtApp
 ) {
   if (fetchingError.statusCode === 429) {
     // These are more readily monitored via the Cloudflare dashboard.
@@ -109,39 +114,38 @@ function recordError(
      * for Plausible, but do actually affect our Sentry quota enough that it
      * is worth diverting them.
      */
-    context.$sendCustomEvent("NETWORK_ERROR", {
+    const { $sendCustomEvent } = nuxtApp
+    $sendCustomEvent("NETWORK_ERROR", {
       requestKind: fetchingError.requestKind,
       searchType: fetchingError.searchType,
     })
   } else {
-    context.$sentry.captureException(originalError, {
-      extra: { fetchingError },
-    })
+    const { $sentry } = nuxtApp
+    if ($sentry && $sentry.captureException) {
+      $sentry.captureException(originalError, {
+        extra: { fetchingError },
+      })
+    } else {
+      console.error(
+        "Sentry not available when recording error, unable to capture exception",
+        originalError
+      )
+    }
   }
 }
 
-function createProcessFetchingError(
-  context: Context
-): typeof normalizeFetchingError {
+export default defineNuxtPlugin(async (nuxtApp) => {
   function processFetchingError(
     ...[originalError, ...args]: Parameters<typeof normalizeFetchingError>
   ) {
     const fetchingError = normalizeFetchingError(originalError, ...args)
-    recordError(context, originalError, fetchingError)
+    recordError(originalError, fetchingError, nuxtApp as NuxtApp)
     return fetchingError
   }
 
-  return processFetchingError
-}
-
-declare module "@nuxt/types" {
-  interface Context {
-    $processFetchingError: ReturnType<typeof createProcessFetchingError>
+  return {
+    provide: {
+      processFetchingError: processFetchingError,
+    },
   }
-}
-
-const plugin: Plugin = async (context, inject) => {
-  inject("processFetchingError", createProcessFetchingError(context))
-}
-
-export default plugin
+})

@@ -44,10 +44,10 @@
 </template>
 
 <script lang="ts">
+import { useI18n } from "#imports"
+
 import { computed, defineComponent, onMounted, reactive, ref } from "vue"
 import { useElementSize, useScroll, watchDebounced } from "@vueuse/core"
-
-import { useI18n } from "~/composables/use-i18n"
 
 import VScroller from "~/components/VMediaInfo/VByLine/VScroller.vue"
 
@@ -65,7 +65,7 @@ export default defineComponent({
     const innerContainerRef = ref<HTMLElement | null>(null)
 
     const i18n = useI18n()
-    const dir = computed(() => i18n.localeProperties.dir ?? "ltr")
+    const dir = computed(() => i18n.localeProperties.value.dir ?? "ltr")
 
     const scrollStep = 150 // px to scroll on each click
     const scrollMargin = 44 // px, button + margin

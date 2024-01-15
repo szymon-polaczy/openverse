@@ -2,13 +2,13 @@
   <fieldset class="mb-8">
     <legend class="label-bold">{{ title }}</legend>
     <div
-      v-for="(item, index) in options"
-      :key="index"
+      v-for="item in options"
+      :key="item.code"
       class="mt-4 flex items-center justify-between"
     >
       <VCheckbox
         :id="item.code"
-        :key="index"
+        :key="item.code"
         :checked="item.checked"
         :name="title"
         :value="item.code"
@@ -23,7 +23,7 @@
       <VPopover
         v-if="isLicense(item.code)"
         strategy="fixed"
-        :label="$t('browsePage.aria.licenseExplanation').toString()"
+        :label="$t('browsePage.aria.licenseExplanation')"
         :trap-focus="false"
       >
         <template #trigger="{ a11yProps }">
@@ -56,10 +56,11 @@
 </template>
 
 <script lang="ts">
+import { useI18n } from "#imports"
+
 import { defineComponent, PropType } from "vue"
 
 import { useSearchStore } from "~/stores/search"
-import { useI18n } from "~/composables/use-i18n"
 
 import type { FilterItem, FilterCategory } from "~/constants/filters"
 

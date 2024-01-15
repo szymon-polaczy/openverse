@@ -1,46 +1,38 @@
 <template>
   <div ref="nodeRef">
     <div v-if="!isActive" class="flex w-full"><slot /></div>
-    <VTeleport v-else to="modal">
-      <div
-        class="h-dyn-screen fixed inset-0 z-40 flex w-full justify-center overflow-y-auto bg-white"
-      >
-        <!-- rule disabled because we need to handle the events from children -->
-        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+    <ClientOnly v-else>
+      <Teleport to="#modal">
         <div
-          ref="dialogRef"
-          v-bind="$attrs"
-          class="flex w-full flex-col px-3 py-4"
-          role="dialog"
-          aria-modal="true"
-          @keydown="onKeyDown"
-          @blur="onBlur"
+          class="h-dyn-screen fixed inset-0 z-40 flex w-full justify-center overflow-y-auto bg-white"
         >
-          <slot />
+          <!-- rule disabled because we need to handle the events from children -->
+          <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+          <div
+            ref="dialogRef"
+            v-bind="$attrs"
+            class="flex w-full flex-col px-3 py-4"
+            role="dialog"
+            aria-modal="true"
+            @keydown="onKeyDown"
+            @blur="onBlur"
+          >
+            <slot />
+          </div>
         </div>
-      </div>
-    </VTeleport>
+      </Teleport>
+    </ClientOnly>
   </div>
 </template>
 
 <script lang="ts">
-import {
-  defineComponent,
-  ref,
-  toRef,
-  ComponentInstance,
-  SetupContext,
-} from "vue"
-
-import { Portal as VTeleport } from "portal-vue"
+import { defineComponent, ref, toRef, SetupContext } from "vue"
 
 import { useDialogContent } from "~/composables/use-dialog-content"
 import { useDialogControl } from "~/composables/use-dialog-control"
 
 export default defineComponent({
   name: "VInputModal",
-  components: { VTeleport },
-
   /**
    * NB: Most of these technically default to `undefined` so that the underlying `VPopoverContent`
    * default for each of them can take over.
@@ -68,7 +60,6 @@ export default defineComponent({
     "close",
   ],
   setup(props, { attrs, emit }) {
-    const focusTrapRef = ref<ComponentInstance | null>(null)
     const nodeRef = ref<HTMLElement | null>(null)
     const dialogRef = ref<HTMLElement | null>(null)
 
@@ -103,7 +94,6 @@ export default defineComponent({
     deactivateRef.value = deactivateFocusTrap
 
     return {
-      focusTrapRef,
       dialogRef,
       nodeRef,
       visibleRef,

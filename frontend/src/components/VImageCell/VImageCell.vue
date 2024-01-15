@@ -61,14 +61,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, withDefaults } from "vue"
+import { useI18n, useNuxtApp } from "#imports"
 
-import { useContext } from "@nuxtjs/composition-api"
+import { computed, withDefaults } from "vue"
 
 import type { AspectRatio, ImageDetail } from "~/types/media"
 import type { ResultKind } from "~/types/result"
 import { useImageCellSize } from "~/composables/use-image-cell-size"
-import { useI18n } from "~/composables/use-i18n"
 
 import { IMAGE } from "~/constants/media"
 
@@ -95,12 +94,12 @@ const props = withDefaults(
      */
     aspectRatio?: AspectRatio
     kind?: ResultKind
-    relatedTo?: string | null
+    relatedTo?: string
   }>(),
   {
     aspectRatio: () => "square",
     kind: () => "search",
-    relatedTo: () => null,
+    relatedTo: () => "null",
   }
 )
 
@@ -171,7 +170,7 @@ const contextSensitiveTitle = computed(() => {
       })
 })
 
-const { $sendCustomEvent } = useContext()
+const { $sendCustomEvent } = useNuxtApp()
 const searchStore = useSearchStore()
 
 /**
@@ -190,12 +189,12 @@ const sendSelectSearchResultEvent = (event: MouseEvent) => {
     mediaType: IMAGE,
     provider: props.image.provider,
     query: props.searchTerm || "",
-    relatedTo: props.relatedTo,
+    relatedTo: props.relatedTo ?? "null",
     sensitivities: props.image.sensitivity?.join(",") ?? "",
-    isBlurred: shouldBlur.value,
+    isBlurred: shouldBlur.value ?? "null",
     collectionType:
-      searchStore.strategy !== "default" ? searchStore.strategy : null,
-    collectionValue: searchStore.collectionValue,
+      searchStore.strategy !== "default" ? searchStore.strategy : "null",
+    collectionValue: searchStore.collectionValue ?? "null",
   })
 }
 

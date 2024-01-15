@@ -15,6 +15,8 @@
 </template>
 
 <script lang="ts">
+import { useI18n, useNuxtApp, useRoute } from "#imports"
+
 import {
   computed,
   defineComponent,
@@ -26,16 +28,15 @@ import {
 import { storeToRefs } from "pinia"
 import { useElementVisibility } from "@vueuse/core"
 
-import { useContext, useRoute } from "@nuxtjs/composition-api"
-
 import { useMediaStore } from "~/stores/media"
-import { useI18n } from "~/composables/use-i18n"
 import { defineEvent } from "~/types/emits"
 
 import type { ResultKind } from "~/types/result"
 import type { SupportedSearchType } from "~/constants/media"
 
 import { useSearchStore } from "~/stores/search"
+
+import { Collection } from "~/types/search"
 
 import VButton from "~/components/VButton.vue"
 
@@ -71,21 +72,22 @@ export default defineComponent({
     const i18n = useI18n()
     const mediaStore = useMediaStore()
     const searchStore = useSearchStore()
-    const { $sendCustomEvent } = useContext()
+    const { $sendCustomEvent } = useNuxtApp()
 
     const { currentPage } = storeToRefs(mediaStore)
 
     const eventPayload = computed(() => {
       let kind: ResultKind =
         searchStore.strategy === "default" ? "search" : "collection"
+      const collectionType =
+        (searchStore.collectionValue as Collection) ?? "null"
       return {
         searchType: props.searchType,
         query: props.searchTerm,
         resultPage: currentPage.value || 1,
         kind,
-        collectionType:
-          searchStore.strategy !== "default" ? searchStore.strategy : null,
-        collectionValue: searchStore.collectionValue,
+        collectionType,
+        collectionValue: searchStore.collectionValue ?? "null",
       }
     })
 

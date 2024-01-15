@@ -1,11 +1,12 @@
+import { defineNuxtPlugin, useNuxtApp, useRuntimeConfig } from "#imports"
+
 import { Mutex, MutexInterface } from "async-mutex"
 
-import { createApiService } from "~/data/api-service"
+import axios from "axios"
+
 import { error, log } from "~/utils/console"
 
 import type { AxiosError } from "axios"
-
-import type { Context, Plugin } from "@nuxt/types"
 
 /* Process level state */
 
@@ -58,9 +59,10 @@ const isNewTokenNeeded = (): boolean => {
     return true
   }
 
-  const aboutToExpire =
+  // Token is about to expire
+  return (
     process.tokenData.accessTokenExpiry - expiryThreshold <= currTimestamp()
-  return aboutToExpire
+  )
 }
 
 /**
@@ -77,12 +79,11 @@ const refreshApiAccessToken = async (
   formData.append("client_secret", clientSecret)
   formData.append("grant_type", "client_credentials")
 
-  const apiService = createApiService()
+  const apiUrl = process.env.NUXT_PUBLIC_API_URL
+  const url = apiUrl + "v1/auth_tokens/token/"
+
   try {
-    const res = await apiService.post<TokenResponse>(
-      "auth_tokens/token",
-      formData
-    )
+    const res = await axios.post<TokenResponse>(url, formData)
     process.tokenData.accessToken = res.data.access_token
     process.tokenData.accessTokenExpiry = currTimestamp() + res.data.expires_in
   } catch (e) {
@@ -111,13 +112,9 @@ process.fetchingMutex = new Mutex()
  * whether it's necessary for them to request a token refresh or if another
  * request has already queued the work. If so, they can just await the process-global
  * promise that will resolve when the api token data refresh request has resolved.
- *
- * @param context - the Nuxt context
  */
-const getApiAccessToken = async (
-  context: Context
-): Promise<string | undefined> => {
-  const { apiClientId, apiClientSecret } = context.$config
+export const getApiAccessToken = async (): Promise<string | undefined> => {
+  const { apiClientId, apiClientSecret } = useRuntimeConfig()
   if (!(apiClientId || apiClientSecret)) {
     return undefined
   }
@@ -157,22 +154,25 @@ const getApiAccessToken = async (
 
 /* Plugin */
 
-declare module "@nuxt/types" {
-  interface Context {
-    $openverseApiToken: string
-  }
-}
-
-const apiToken: Plugin = async (context, inject) => {
+export default defineNuxtPlugin(async () => {
   let openverseApiToken: string | undefined
   try {
-    openverseApiToken = await getApiAccessToken(context)
+    openverseApiToken = await getApiAccessToken()
   } catch (e) {
     // capture the exception but allow the request to continue with anonymous API requests
-    context.$sentry.captureException(e)
-  } finally {
-    inject("openverseApiToken", openverseApiToken || "")
+    const { $sentry } = useNuxtApp()
+    if ($sentry) {
+      $sentry.captureException(e)
+    } else {
+      console.error(
+        `Could not get the API token, on ${import.meta.client ? "client" : "server"}. Sentry not available, unable to capture exception`,
+        e
+      )
+    }
   }
-}
-
-export default apiToken
+  return {
+    provide: {
+      openverseApiToken: openverseApiToken || "",
+    },
+  }
+})

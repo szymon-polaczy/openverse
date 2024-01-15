@@ -1,7 +1,7 @@
-import { isProd, isClient } from "~/utils/node-env"
+import { isProd } from "~/utils/node-env"
 
 export const getLogger = (level: "log" | "warn" | "error") =>
-  isProd && isClient
+  isProd && import.meta.client
     ? () => {
         // do nothing
       }

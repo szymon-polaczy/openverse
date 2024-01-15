@@ -13,6 +13,7 @@ import { AUDIO, IMAGE } from "~/constants/media"
 
 export interface Tag {
   name: string
+  accuracy?: number | null
 }
 
 /**

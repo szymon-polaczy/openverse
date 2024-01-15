@@ -32,6 +32,8 @@
   </div>
 </template>
 <script lang="ts">
+import { useI18n, useNuxtApp } from "#imports"
+
 import {
   computed,
   defineComponent,
@@ -40,14 +42,12 @@ import {
   type PropType,
   ref,
 } from "vue"
-import { useContext } from "@nuxtjs/composition-api"
 
 import { useResizeObserver, watchDebounced } from "@vueuse/core"
 
 import type { Tag } from "~/types/media"
 import type { SupportedMediaType } from "~/constants/media"
 import { useSearchStore } from "~/stores/search"
-import { useI18n } from "~/composables/use-i18n"
 
 import { focusElement } from "~/utils/focus-management"
 
@@ -75,8 +75,8 @@ export default defineComponent({
     const tagsContainerRef = ref<HTMLElement>()
 
     const searchStore = useSearchStore()
-    const { $sendCustomEvent } = useContext()
-    const i18n = useI18n()
+    const { $sendCustomEvent } = useNuxtApp()
+    const i18n = useI18n({ useScope: "global" })
 
     const localizedTagPath = (tag: string) => {
       return searchStore.getCollectionPath({
@@ -91,7 +91,7 @@ export default defineComponent({
 
     const collapsibleRowsStartAt = ref<number>()
     const dir = computed(() => {
-      return i18n.localeProperties.dir
+      return i18n.localeProperties.value.dir
     })
 
     function isFurtherInline(previous: HTMLElement, current: HTMLElement) {

@@ -1,3 +1,5 @@
+import { tryUseNuxtApp } from "#imports"
+
 import { defineStore } from "pinia"
 
 import { warn } from "~/utils/console"
@@ -19,16 +21,15 @@ import {
   supportedMediaTypes,
 } from "~/constants/media"
 import { NO_RESULT } from "~/constants/errors"
-import { initServices } from "~/stores/media/services"
 import { isSearchTypeSupported, useSearchStore } from "~/stores/search"
 import { useRelatedMediaStore } from "~/stores/media/related-media"
 import { deepFreeze } from "~/utils/deep-freeze"
 
+import { createApiClient } from "~/data/api-service"
+
 interface SearchFetchState extends Omit<FetchState, "hasStarted"> {
   hasStarted: boolean
 }
-import type { SearchTimeEventPayload } from "~/data/media-service"
-
 export type MediaStoreResult = {
   count: number
   pageCount: number
@@ -449,12 +450,6 @@ export const useMediaStore = defineStore("media", {
       this.currentPage = 0
     },
 
-    recordSearchTime(payload: SearchTimeEventPayload | undefined) {
-      if (payload) {
-        this.$nuxt.$sendCustomEvent("SEARCH_RESPONSE_TIME", payload)
-      }
-    },
-
     /**
      * @param mediaType - the mediaType to fetch (do not use 'All_media' here)
      * @param shouldPersistMedia - whether the existing media should be added to or replaced.
@@ -475,10 +470,26 @@ export const useMediaStore = defineStore("media", {
 
       this._updateFetchState(mediaType, "start")
       try {
-        const accessToken = this.$nuxt.$openverseApiToken
-        const service = initServices[mediaType](accessToken)
-        const { eventPayload, data } = await service.search(queryParams)
-        this.recordSearchTime(eventPayload)
+        const nuxtApp = tryUseNuxtApp()
+        const accessToken = nuxtApp ? nuxtApp.$openverseApiToken : undefined
+
+        const client = createApiClient({ accessToken })
+
+        const { eventPayload, data } = await client.search(
+          mediaType,
+          queryParams
+        )
+
+        if (eventPayload) {
+          if (nuxtApp) {
+            nuxtApp.$sendCustomEvent("SEARCH_RESPONSE_TIME", eventPayload)
+          } else {
+            console.log(
+              "nuxtApp is not available, we need to send the SEARCH_RESPONSE_TIME event with payload:",
+              eventPayload
+            )
+          }
+        }
         const mediaCount = data.result_count
         let errorData: FetchingError | undefined
         /**
@@ -507,7 +518,7 @@ export const useMediaStore = defineStore("media", {
         })
         return mediaCount
       } catch (error: unknown) {
-        const errorData = this.$nuxt.$processFetchingError(
+        const errorData = tryUseNuxtApp()?.$processFetchingError(
           error,
           mediaType,
           "search",

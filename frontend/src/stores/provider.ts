@@ -1,18 +1,24 @@
+import { useNuxtApp } from "#imports"
+
 import { defineStore } from "pinia"
 
 import { capitalCase } from "~/utils/case"
 import {
   AUDIO,
   IMAGE,
-  SupportedMediaType,
+  type SupportedMediaType,
   supportedMediaTypes,
 } from "~/constants/media"
-import { initProviderServices } from "~/data/media-provider-service"
 
 import type { MediaProvider } from "~/types/media-provider"
 import type { FetchingError, FetchState } from "~/types/fetch-state"
 
+import { createApiClient } from "~/data/api-service"
+
 export interface ProviderState {
+  /**
+   * Timestamp is used to limit the update frequency to one every 60 minutes per request.
+   */
   providers: {
     audio: MediaProvider[]
     image: MediaProvider[]
@@ -31,8 +37,11 @@ export interface ProviderState {
  * Sorts providers by their source_name property.
  * @param data - initial unordered list of providers
  */
-const sortProviders = (data: MediaProvider[]): MediaProvider[] => {
-  return [...data].sort((sourceObjectA, sourceObjectB) => {
+export const sortProviders = (data: MediaProvider[]): MediaProvider[] => {
+  if (!data.length || !Array.isArray(data)) {
+    return []
+  }
+  return data.sort((sourceObjectA, sourceObjectB) => {
     const nameA = sourceObjectA.source_name.toUpperCase()
     const nameB = sourceObjectB.source_name.toUpperCase()
     return nameA.localeCompare(nameB)
@@ -125,18 +134,14 @@ export const useProviderStore = defineStore("provider", {
       this._updateFetchState(mediaType, "start")
       let sortedProviders = [] as MediaProvider[]
       try {
-        const service = initProviderServices[mediaType](
-          this.$nuxt?.$config?.apiAccessToken
-        )
-        const res = await service.getProviderStats()
-        sortedProviders = sortProviders(res)
+        const { $openverseApiToken: accessToken } = useNuxtApp()
+        const client = createApiClient({ accessToken })
+        const res = await client.stats(mediaType)
+        sortedProviders = sortProviders(res ?? [])
         this._updateFetchState(mediaType, "end")
       } catch (error: unknown) {
-        const errorData = this.$nuxt.$processFetchingError(
-          error,
-          mediaType,
-          "provider"
-        )
+        const { $processFetchingError } = useNuxtApp()
+        const errorData = $processFetchingError(error, mediaType, "provider")
 
         // Fallback on existing providers if there was an error
         sortedProviders = this.providers[mediaType]

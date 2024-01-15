@@ -1,10 +1,11 @@
-import { defineStore } from "pinia"
+import { tryUseNuxtApp } from "#imports"
 
-import { initServices } from "~/stores/media/services"
+import { defineStore } from "pinia"
 
 import type { FetchingError, FetchState } from "~/types/fetch-state"
 import type { Media } from "~/types/media"
 import type { SupportedMediaType } from "~/constants/media"
+import { createApiClient } from "~/data/api-service"
 
 interface RelatedMediaState {
   mainMediaId: null | string
@@ -43,31 +44,42 @@ export const useRelatedMediaStore = defineStore("related-media", {
       this.fetchState.fetchingError = null
     },
 
-    async fetchMedia(mediaType: SupportedMediaType, id: string) {
+    async fetchMedia(
+      mediaType: SupportedMediaType,
+      id: string,
+      apiToken?: string
+    ) {
+      if (this.mainMediaId === id && this.media.length > 0) {
+        return this.media
+      }
       this._resetFetching()
       this.mainMediaId = id
       this._startFetching()
       this.media = []
       try {
-        const accessToken = this.$nuxt.$openverseApiToken
-        const service = initServices[mediaType](accessToken)
-        this.media = (
-          await service.getRelatedMedia<typeof mediaType>(id)
-        ).results
+        let accessToken = apiToken
+        if (!accessToken) {
+          accessToken = tryUseNuxtApp()?.$openverseApiToken
+        }
+        const client = createApiClient({ accessToken })
+
+        this.media = await client.getRelatedMedia(mediaType, id)
         this._endFetching()
 
-        return this.media.length
+        return this.media
       } catch (error) {
-        const errorData = this.$nuxt.$processFetchingError(
-          error,
-          mediaType,
-          "related",
-          {
+        const nuxtAppInstance = tryUseNuxtApp()
+        if (nuxtAppInstance) {
+          const { $processFetchingError } = nuxtAppInstance
+          const errorData = $processFetchingError(error, mediaType, "related", {
             id,
-          }
-        )
+          })
 
-        this._endFetching(errorData)
+          this._endFetching(errorData)
+        }
+        if (!nuxtAppInstance) {
+          this._endFetching()
+        }
         return null
       }
     },

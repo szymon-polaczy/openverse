@@ -52,9 +52,9 @@
   </VMediaCollection>
 </template>
 <script lang="ts">
-import { computed, defineComponent, PropType } from "vue"
+import { useI18n } from "#imports"
 
-import { useI18n } from "~/composables/use-i18n"
+import { computed, defineComponent, PropType } from "vue"
 
 import { useMediaStore } from "~/stores/media"
 import { useSearchStore } from "~/stores/search"

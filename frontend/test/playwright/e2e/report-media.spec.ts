@@ -13,7 +13,7 @@ import {
 } from "~~/test/playwright/utils/analytics"
 
 import { supportedMediaTypes } from "~/constants/media"
-import { ReportReason } from "~/constants/content-report"
+import type { ReportReason } from "~/constants/content-report"
 
 test.describe.configure({ mode: "parallel" })
 

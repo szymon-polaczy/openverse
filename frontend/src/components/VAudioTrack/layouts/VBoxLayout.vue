@@ -26,8 +26,7 @@
         <div class="flex-none p-2">
           <slot
             name="audio-control"
-            size="small"
-            layout="box"
+            v-bind="{ size: 'small', layout: 'box' } as const"
             :is-tabbable="false"
           />
         </div>
@@ -46,11 +45,12 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType } from "vue"
+import { useI18n } from "#imports"
+
+import { computed, defineComponent, type PropType } from "vue"
 
 import type { AudioDetail } from "~/types/media"
 import type { AudioSize } from "~/constants/audio"
-import { useI18n } from "~/composables/use-i18n"
 import { useSensitiveMedia } from "~/composables/use-sensitive-media"
 
 import VLicense from "~/components/VLicense/VLicense.vue"
@@ -71,12 +71,12 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const i18n = useI18n()
+    const i18n = useI18n({ useScope: "global" })
 
     const isSmall = computed(() => props.size === "s")
 
     const categoryLabel = computed(() =>
-      i18n.t(`filters.audioCategories.${props.audio.category}`).toString()
+      i18n.t(`filters.audioCategories.${props.audio.category}`)
     )
 
     const { isHidden: shouldBlur } = useSensitiveMedia(props.audio)
@@ -91,7 +91,7 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.box-track .waveform {
+:deep(.waveform) {
   @apply h-10 flex-grow;
   --waveform-background-color: theme("colors.yellow");
 }

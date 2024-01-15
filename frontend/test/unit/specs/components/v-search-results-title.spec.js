@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest"
+
 import { render } from "~~/test/unit/test-utils/render"
 
 import VSearchResultsTitle from "~/components/VSearchResultsTitle.vue"

@@ -73,6 +73,7 @@ test("some tags are hidden if there are more than 3 rows", async ({ page }) => {
   await preparePageForTests(page, "xl")
   await page.goto("/image/2bc7dde0-5aad-4cf7-b91d-7f0e3bd06750")
 
+  await expect(EXPAND_BUTTON(page)).toBeVisible()
   const tags = page.getByRole("list", { name: t("mediaDetails.tags.title") })
   await expect(tags).toBeVisible()
   const tagsCount = await tags.locator("li").count()

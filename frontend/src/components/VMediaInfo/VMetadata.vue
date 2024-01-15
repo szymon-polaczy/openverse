@@ -17,10 +17,9 @@
     </div>
   </dl>
   <dl v-else class="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2">
-    <template v-for="datum in metadata">
+    <template v-for="datum in metadata" :key="datum.label">
       <VSourceProviderTooltip
         v-if="tooltipId(datum)"
-        :key="datum.label"
         :described-by="tooltipId(datum)"
         class="label-regular flex flex-row items-center p-1 sm:py-0 sm:pe-0"
         :datum="datum"
@@ -34,7 +33,6 @@
         {{ $t(datum.label) }}
       </dt>
       <VMetadataValue
-        :key="`${datum.label}-value`"
         :datum="datum"
         @click="sendVisitSourceLinkEvent(datum.source)"
       />
@@ -42,11 +40,11 @@
   </dl>
 </template>
 <script lang="ts">
+import { firstParam, useNuxtApp, useRoute } from "#imports"
+
 import { computed, defineComponent, PropType } from "vue"
-import { useRoute } from "@nuxtjs/composition-api"
 
 import type { Metadata } from "~/types/media"
-import { useAnalytics } from "~/composables/use-analytics"
 import { useUiStore } from "~/stores/ui"
 
 import VMetadataValue from "~/components/VMediaInfo/VMetadataValue.vue"
@@ -80,13 +78,14 @@ export default defineComponent({
       "--column-count": props.metadata.length,
     }))
 
-    const { sendCustomEvent } = useAnalytics()
+    const { $sendCustomEvent } = useNuxtApp()
     const sendVisitSourceLinkEvent = (source?: string) => {
-      if (!source) {
+      const mediaId = firstParam(route.params.id)
+      if (!source || !mediaId) {
         return
       }
-      sendCustomEvent("VISIT_SOURCE_LINK", {
-        id: route.value.params.id,
+      $sendCustomEvent("VISIT_SOURCE_LINK", {
+        id: mediaId,
         source,
       })
     }

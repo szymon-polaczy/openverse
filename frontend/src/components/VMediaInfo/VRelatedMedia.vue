@@ -22,11 +22,11 @@
 </template>
 
 <script lang="ts">
+import { useRoute, useI18n, firstParam } from "#imports"
+
 import { computed, defineComponent, PropType, watch } from "vue"
-import { useRoute } from "@nuxtjs/composition-api"
 
 import { useRelatedMediaStore } from "~/stores/media/related-media"
-import { useI18n } from "~/composables/use-i18n"
 
 import type { SupportedMediaType } from "~/constants/media"
 import type { AudioResults, ImageResults } from "~/types/result"
@@ -60,11 +60,9 @@ export default defineComponent({
     watch(
       route,
       async (newRoute) => {
-        if (newRoute.params.id !== relatedMediaStore.mainMediaId) {
-          await relatedMediaStore.fetchMedia(
-            props.mediaType,
-            newRoute.params.id
-          )
+        const mediaId = firstParam(newRoute.params.id)
+        if (mediaId && mediaId !== relatedMediaStore.mainMediaId) {
+          await relatedMediaStore.fetchMedia(props.mediaType, mediaId)
         }
       },
       { immediate: true }
@@ -76,10 +74,7 @@ export default defineComponent({
     )
 
     const searchTerm = computed(() => {
-      const q = Array.isArray(route.value.query.q)
-        ? route.value.query.q[0]
-        : route.value.query.q
-      return q ?? ""
+      return firstParam(route.query.q) ?? ""
     })
 
     const i18n = useI18n()

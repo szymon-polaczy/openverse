@@ -15,10 +15,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from "vue"
-import { useContext } from "@nuxtjs/composition-api"
+import { useI18n } from "#imports"
 
-import { useI18n } from "~/composables/use-i18n"
+import { defineComponent, ref, onMounted } from "vue"
+
 import { loadScript } from "~/utils/load-script"
 
 const sketchfabUrl =
@@ -45,17 +45,16 @@ export default defineComponent({
   },
   emits: ["failure"],
   setup(props, { emit }) {
-    const i18n = useI18n()
-    const label = i18n
-      .t("sketchfabIframeTitle", { sketchfab: "Sketchfab" })
-      .toString()
+    const i18n = useI18n({ useScope: "global" })
+    const label = i18n.t("sketchfabIframeTitle", { sketchfab: "Sketchfab" })
     const node = ref<Element | undefined>()
-    const { $sentry } = useContext()
 
     const initSketchfab = async () => {
       await loadScript(sketchfabUrl)
       if (typeof window.Sketchfab === "undefined") {
-        $sentry.captureMessage("Unable to find window.Sketchfab after loading")
+        // TODO: re-add sentry
+        // $sentry.captureMessage("Unable to find window.Sketchfab after loading")
+        console.warn("Unable to find window.Sketchfab after loading")
         return
       }
 
@@ -68,7 +67,8 @@ export default defineComponent({
       const sf = new window.Sketchfab(node.value)
       sf.init(props.uid, {
         error: (e: unknown) => {
-          $sentry.captureException(e)
+          console.warn(e)
+          // TODO: capture exception in sentry
           emit("failure")
         },
       })
