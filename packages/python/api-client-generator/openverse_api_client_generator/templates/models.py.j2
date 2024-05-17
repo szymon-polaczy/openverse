@@ -1,0 +1,22 @@
+import typing
+
+{% for model in models.values() %}
+@dataclass
+class {{ model.name }}:
+{%- if model.description %}
+    """
+    {{ model.description }}
+    """
+{% endif %}
+
+{%- for property in model.py_properties %}
+    {{ property.name }}:{{ " None |" if property.nullable or not property.required }} {{ property.py_type_string }}{{ " = None" if not property.required }}
+{%- if property.description %}
+    """
+    {{ property.description }}
+    """
+{% endif %}
+
+{%- endfor %}
+
+{% endfor %}

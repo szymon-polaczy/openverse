@@ -1,0 +1,17 @@
+{% for model in models.values() %}
+{% if model.description %}
+/**
+ * {{ model.description | replace('\n', '\n * ') }}
+ */
+{% endif -%}
+interface {{ model.name }} {
+{%- for property in model.properties.values() -%}
+{% if property.description %}
+    /**
+     * {{ property.description | replace('\n', '\n     * ')}}
+     */
+{%- endif %}
+    {{ property.name }}{{ "?" if not property.required }}:{{ " null |" if property.nullable }} {{ property.ts_type_string }}
+{% endfor -%}
+}
+{% endfor %}
