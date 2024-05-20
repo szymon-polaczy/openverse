@@ -69,6 +69,7 @@
     "@nuxtjs/sitemap": "^5.1.5",
     "@nuxtjs/tailwindcss": "^6.12.0",
     "@pinia/nuxt": "^0.5.1",
+    "@sentry/node": "^8.2.1",
     "@sentry/vue": "^8.2.1",
     "@tailwindcss/typography": "^0.5.13",
     "@vueuse/core": "^10.9.0",
