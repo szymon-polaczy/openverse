@@ -143,6 +143,10 @@ export const createApiClient = ({
   } else {
     baseUrl = useRuntimeConfig().public.apiUrl ?? "https://api.openverse.org/"
   }
+  // TODO: Fix the NUXT_PUBLIC_API_URL env variable
+  if (baseUrl === "https://api.openverse.engineering/") {
+    baseUrl = "https://api.openverse.org"
+  }
 
   const headers: AxiosRequestConfig["headers"] = {}
   if (import.meta.server) {

@@ -79,8 +79,8 @@ const refreshApiAccessToken = async (
   formData.append("client_secret", clientSecret)
   formData.append("grant_type", "client_credentials")
 
-  const apiUrl = process.env.NUXT_PUBLIC_API_URL
-  const url = apiUrl + "v1/auth_tokens/token/"
+  const apiUrl = process.env.NUXT_PUBLIC_API_URL ?? "https://api.openverse.org/"
+  const url = `${apiUrl.endsWith(".engineering/") ? apiUrl.replace(".engineering", ".org") : apiUrl}v1/auth_tokens/token/`
 
   try {
     const res = await axios.post<TokenResponse>(url, formData)

@@ -66,15 +66,11 @@ export default defineNuxtConfig({
         },
         {
           rel: "dns-prefetch",
-          href:
-            process.env.NUXT_PUBLIC_API_URL ||
-            "https://api.openverse.engineering/",
+          href: process.env.NUXT_PUBLIC_API_URL || "https://api.openverse.org/",
         },
         {
           rel: "preconnect",
-          href:
-            process.env.NUXT_PUBLIC_API_URL ||
-            "https://api.openverse.engineering/",
+          href: process.env.NUXT_PUBLIC_API_URL || "https://api.openverse.org/",
           crossorigin: "",
         },
       ],
@@ -96,7 +92,7 @@ export default defineNuxtConfig({
     public: {
       // Can be overwritten by NUXT_PUBLIC_API_URL env variable
       deploymentEnv: process.env.DEPLOYMENT_ENV ?? "local",
-      apiUrl: "https://api.openverse.engineering/",
+      apiUrl: "https://api.openverse.org/",
       providerUpdateFrequency: 3600000,
       savedSearchCount: 4,
       sentry: {

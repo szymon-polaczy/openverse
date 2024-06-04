@@ -43,7 +43,7 @@ ENV NUXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV NUXT_PUBLIC_SENTRY_DSN=https://b6466b74788a4a2f8a7912eea912beb7@o787041.ingest.sentry.io/5799642
 
-ARG API_URL=https://api.openverse.engineering/
+ARG API_URL=https://api.openverse.org/
 ENV NUXT_PUBLIC_API_URL=$API_URL
 
 RUN pnpm build:only
@@ -70,8 +70,10 @@ WORKDIR /home/node/frontend/
 
 ARG SEMANTIC_VERSION
 ARG DEPLOYMENT_ENV=production
+ARG API_URL=https://api.openverse.org/
 ENV NUXT_PUBLIC_SENTRY_RELEASE=$SEMANTIC_VERSION
 ENV NUXT_PUBLIC_SENTRY_ENVIRONMENT=$DEPLOYMENT_ENV
+ENV NUXT_PUBLIC_API_URL=$API_URL
 
 # set app serving to permissive / assigned
 ENV NUXT_HOST=0.0.0.0

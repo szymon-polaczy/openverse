@@ -32,7 +32,7 @@ vi.mock("#app/nuxt", async () => {
     ...original,
     useNuxtApp: vi.fn(),
     useRuntimeConfig: vi.fn(() => ({
-      public: { apiUrl: "https://api.openverse.engineering/" },
+      public: { apiUrl: "https://api.openverse.org/" },
     })),
   }
 })
