@@ -54,6 +54,7 @@ run-img tag="openverse-frontend:local":
 # export CR_PAT=YOUR_TOKEN
 # echo $CR_PAT | docker login ghcr.io -u USERNAME --password-stdin
 push-to-nuxt-preview github_username:
+    echo $CR_PAT | docker login ghcr.io -u {{github_username}} --password-stdin
     just build-img ghcr.io/wordpress/openverse-frontend:nuxt-preview
     docker build -t ghcr.io/wordpress/openverse-frontend_nginx:nuxt-preview -f ./Dockerfile.nginx .
     docker push ghcr.io/wordpress/openverse-frontend:nuxt-preview
