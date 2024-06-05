@@ -32,8 +32,6 @@ const favicons = [
 const isProdNotPlaywright = isProd && !(process.env.PW === "true")
 const isTest = process.env.TEST === "true"
 
-const additionalLocales = isTest ? locales : []
-
 const openverseLocales = [
   {
     /* Nuxt i18n fields */
@@ -48,7 +46,7 @@ const openverseLocales = [
     name: "English",
     nativeName: "English",
   },
-  ...additionalLocales,
+  ...locales,
 ].filter((l) => Boolean(l.iso)) as LocaleObject[]
 
 export default defineNuxtConfig({
