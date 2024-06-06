@@ -97,7 +97,22 @@ let replacePlaceholders = (json, locale, deprecatedKeys) => {
     if (json.includes("||")) {
       json = ""
     }
-    return json.replace(/###([a-zA-Z-]*)###/g, replacer)
+
+    let replaced = json.replace(/###([a-zA-Z-]*?)###/g, replacer)
+    // Irregular placeholders with more or fewer than 3 #s
+    replaced = replaced.replace(/#{1,4}([a-zA-Z-]+?)#{1,4}/g, "{$1}")
+    if (replaced.includes("{}")) {
+      console.warn(`Found {} in ${locale} translation strings: ${replaced}`)
+      replaced = ""
+    }
+    let withoutOpenverseChannel = replaced.replace("#openverse", "")
+    if (withoutOpenverseChannel.includes("#")) {
+      console.warn(
+        `Found left-over # in ${locale} translation strings: ${replaced}`
+      )
+      replaced = ""
+    }
+    return replaced
   }
   let currentJson = { ...json }
 
