@@ -94,7 +94,9 @@ export default defineNuxtConfig({
       providerUpdateFrequency: 3600000,
       savedSearchCount: 4,
       sentry: {
-        dsn: "https://b6466b74788a4a2f8a7912eea912beb7@o787041.ingest.sentry.io/5799642",
+        dsn: isProdNotPlaywright
+          ? "https://b6466b74788a4a2f8a7912eea912beb7@o787041.ingest.sentry.io/5799642"
+          : "",
         environment: isProd ? "production" : "local",
         release: "",
       },

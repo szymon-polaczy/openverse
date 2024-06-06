@@ -81,6 +81,7 @@ export function recordError(
   fetchingError: FetchingError,
   nuxtApp: NuxtApp
 ) {
+  console.warn("Recording fetching error", fetchingError)
   if (fetchingError.statusCode === 429) {
     // These are more readily monitored via the Cloudflare dashboard.
     return
@@ -106,7 +107,7 @@ export function recordError(
     return
   }
 
-  if (process.client && fetchingError.code === "ERR_NETWORK") {
+  if (import.meta.client && fetchingError.code === "ERR_NETWORK") {
     /**
      * Record network errors in Plausible so that we can evaluate potential
      * regional or device configuration issues, for which Sentry is not
