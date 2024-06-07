@@ -175,9 +175,4 @@ export default defineNuxtConfig({
            */
           "http://localhost:50290"),
   },
-  nitro: {
-    prerender: {
-      routes: ["/sitemap.xml"],
-    },
-  },
 })
