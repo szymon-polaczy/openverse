@@ -45,6 +45,7 @@ ENV NUXT_PUBLIC_SENTRY_DSN=https://b6466b74788a4a2f8a7912eea912beb7@o787041.inge
 
 ARG API_URL=https://api.openverse.org/
 ENV NUXT_PUBLIC_API_URL=$API_URL
+ENV NODE_OPTIONS="--max_old_space_size=4096"
 
 RUN pnpm build:only
 
