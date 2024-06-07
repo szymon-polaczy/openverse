@@ -17,23 +17,6 @@ export default defineNuxtPlugin((nuxtApp) => {
     app: nuxtApp.vueApp,
   })
 
-  nuxtApp.hooks.hook("app:error", (error) => {
-    console.warn(
-      "app:error captured",
-      error,
-      error.code,
-      error.response,
-      "statusCode",
-      error.statusCode
-    )
-    Sentry.captureException(error)
-  })
-
-  nuxtApp.hooks.hook("vue:error", (error) => {
-    console.warn("vue:error captured", error)
-    Sentry.captureException(error)
-  })
-
   return {
     provide: {
       sentry: Sentry,
