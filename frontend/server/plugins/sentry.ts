@@ -15,6 +15,7 @@ export default defineNitroPlugin((nitroApp) => {
     environment: sentry.environment,
     release: sentry.release,
   })
+  Sentry.setContext("render context", { platform: "server" })
   logger.success("Initialized sentry on the server with config\n", sentry)
 
   nitroApp.hooks.hook("request", (event) => {
