@@ -57,7 +57,7 @@ import NuxtRoot from "#build/root-component.mjs"
 
 import { useRouter } from "#imports"
 
-export type RenderOptions = TestingLibraryRenderOptions & {
+export type RenderOptions = TestingLibraryRenderOptions<unknown> & {
   route?: RouteLocationRaw
 }
 
@@ -130,7 +130,7 @@ export async function renderSuspended<T>(
             expose: () => {},
           })
         },
-        render: (renderContext: any) =>
+        render: () =>
           // See discussions in https://github.com/testing-library/vue-testing-library/issues/230
           // we add this additional root element because otherwise testing-library breaks
           // because there's no root element while Suspense is resolving
