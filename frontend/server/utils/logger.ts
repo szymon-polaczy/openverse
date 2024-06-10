@@ -1,12 +1,9 @@
-import { env } from "node:process"
-
 import { consola } from "consola"
 
-if (env.NODE_ENV !== "production") {
-  consola.info("Running in development mode")
-  env.CONSOLA_LEVEL = "debug"
-} else {
-  env.CONSOLA_LEVEL = "info"
-}
+const logger = consola.withTag("Openverse")
+// In production, `info` on the server and silent on the client.
+// In other environments, `debug`.
+logger.level =
+  process.env.NODE_ENV === "production" ? (import.meta.server ? 3 : -999) : 4
 
-export const logger = consola.withTag("Openverse")
+export { logger }

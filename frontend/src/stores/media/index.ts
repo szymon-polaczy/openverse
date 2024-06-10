@@ -485,7 +485,7 @@ export const useMediaStore = defineStore("media", {
             nuxtApp.$sendCustomEvent("SEARCH_RESPONSE_TIME", eventPayload)
           } else {
             console.log(
-              "nuxtApp is not available, we need to send the SEARCH_RESPONSE_TIME event with payload:",
+              "nuxtApp is not available, could not send the SEARCH_RESPONSE_TIME event with payload:",
               eventPayload
             )
           }
