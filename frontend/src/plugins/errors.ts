@@ -121,17 +121,8 @@ export function recordError(
       searchType: fetchingError.searchType,
     })
   } else {
-    const { $sentry } = nuxtApp
-    if ($sentry && $sentry.captureException) {
-      $sentry.captureException(originalError, {
-        extra: { fetchingError },
-      })
-    } else {
-      console.error(
-        "Sentry not available when recording error, unable to capture exception",
-        originalError
-      )
-    }
+    const sentry = nuxtApp.ssrContext?.event.context.$sentry ?? nuxtApp.$sentry
+    sentry.captureException(originalError, { extra: { fetchingError } })
   }
 }
 

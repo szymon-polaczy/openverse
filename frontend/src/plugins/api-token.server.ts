@@ -1,12 +1,13 @@
-import { defineNuxtPlugin, useNuxtApp, useRuntimeConfig } from "#imports"
+import { defineNuxtPlugin, useRuntimeConfig } from "#imports"
 
 import { Mutex, MutexInterface } from "async-mutex"
 
 import axios from "axios"
 
-import { error, log } from "~/utils/console"
+import { logger } from "~~/server/utils/logger"
 
 import type { AxiosError } from "axios"
+import type { NuxtApp } from "#app"
 
 /* Process level state */
 
@@ -92,12 +93,12 @@ const refreshApiAccessToken = async (
      * anonymously and hope it works. By setting the expiry to 0 we queue
      * up another token fetch attempt for the next request.
      */
-    error("Unable to retrieve API token, clearing existing token", e)
     process.tokenData.accessToken = ""
     process.tokenData.accessTokenExpiry = 0
     ;(e as AxiosError).message = `Unable to retrieve API token. ${
       (e as AxiosError).message
     }`
+    logger.warn((e as AxiosError).message)
     throw e
   }
 }
@@ -125,16 +126,16 @@ export const getApiAccessToken = async (): Promise<string | undefined> => {
   // not already another request making the request (represented
   // by the locked mutex).
   if (isNewTokenNeeded() && !process.fetchingMutex.isLocked()) {
-    log("acquiring mutex lock")
+    logger.debug("acquiring mutex lock")
     release = await process.fetchingMutex.acquire()
-    log("mutex lock acquired, preparing token refresh request")
+    logger.debug("mutex lock acquired, preparing token refresh request")
     process.tokenFetching = refreshApiAccessToken(apiClientId, apiClientSecret)
   }
 
   try {
-    log("awaiting the fetching of the api token to resolve")
+    logger.debug("awaiting the fetching of the api token to resolve")
     await process.tokenFetching
-    log("done waiting for the token, moving on now...")
+    logger.debug("done waiting for the token, moving on now...")
   } finally {
     /**
      * Releasing must be in a `finally` block otherwise if the
@@ -143,32 +144,23 @@ export const getApiAccessToken = async (): Promise<string | undefined> => {
      * refresh.
      */
     if (release) {
-      log("releasing mutex")
+      logger.debug("releasing mutex")
       release()
-      log("mutex released")
+      logger.debug("mutex released")
     }
   }
 
   return process.tokenData.accessToken
 }
 
-/* Plugin */
-
-export default defineNuxtPlugin(async () => {
+export default defineNuxtPlugin(async (app) => {
   let openverseApiToken: string | undefined
   try {
     openverseApiToken = await getApiAccessToken()
   } catch (e) {
-    // capture the exception but allow the request to continue with anonymous API requests
-    const { $sentry } = useNuxtApp()
-    if ($sentry) {
-      $sentry.captureException(e)
-    } else {
-      console.error(
-        `Could not get the API token, on ${import.meta.client ? "client" : "server"}. Sentry not available, unable to capture exception`,
-        e
-      )
-    }
+    const sentry =
+      app.ssrContext?.event.context.$sentry ?? (app as NuxtApp).$sentry
+    sentry.captureException(e)
   }
   return {
     provide: {
