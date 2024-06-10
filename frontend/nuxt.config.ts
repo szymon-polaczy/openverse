@@ -30,7 +30,7 @@ const favicons = [
 ]
 
 const isProdNotPlaywright = isProd && !(process.env.PW === "true")
-const isTest = process.env.TEST === "true"
+const isTest = process.env.TEST === "true" || process.env.PW === "true"
 
 const openverseLocales = [
   {
@@ -154,6 +154,7 @@ export default defineNuxtConfig({
     logIgnoredEvents: !isProd,
     trackLocalhost: !isProdNotPlaywright,
     // ignoredHostnames: isProdNotPlaywright ? [] : ["localhost"],
+    autoPageviews: isProdNotPlaywright,
     // This is the current domain of the site.
     domain:
       process.env.SITE_DOMAIN ??
