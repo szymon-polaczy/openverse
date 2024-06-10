@@ -29,8 +29,9 @@ const favicons = [
   },
 ]
 
-const isProdNotPlaywright = isProd && !(process.env.PW === "true")
-const isTest = process.env.TEST === "true" || process.env.PW === "true"
+const isPlaywright = process.env.PW === "true"
+const isProdNotPlaywright = isProd && !isPlaywright
+const isTest = process.env.TEST === "true" || isPlaywright
 
 const openverseLocales = [
   {
@@ -88,8 +89,8 @@ export default defineNuxtConfig({
     apiClientId: "",
     apiClientSecret: "",
     public: {
-      // Can be overwritten by NUXT_PUBLIC_API_URL env variable
       deploymentEnv: process.env.DEPLOYMENT_ENV ?? "local",
+      // Can be overwritten by NUXT_PUBLIC_API_URL env variable
       apiUrl: "https://api.openverse.org/",
       providerUpdateFrequency: 3600000,
       savedSearchCount: 4,
@@ -100,6 +101,7 @@ export default defineNuxtConfig({
         environment: isProd ? "production" : "local",
         release: "",
       },
+      isPlaywright,
     },
   },
   dev: !isProd,

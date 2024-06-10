@@ -2,6 +2,8 @@ import { decodeMediaData, useRuntimeConfig } from "#imports"
 
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios"
 
+import { logger } from "~~/server/utils/logger"
+
 import { warn } from "~/utils/console"
 
 import { mediaSlug } from "~/utils/query-utils"
@@ -176,13 +178,17 @@ export const createApiClient = ({
     return config
   })
   client.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      logger.info(">>>", response.request.responseURL, response.status)
+      return response
+    },
     (error) => {
       if (error.code === "ECONNABORTED") {
         error.message = `timeout of ${
           DEFAULT_REQUEST_TIMEOUT / 1000
         } seconds exceeded`
       }
+      logger.warn(">>>", error.message)
       return Promise.reject(error)
     }
   )
