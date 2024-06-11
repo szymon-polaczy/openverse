@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from types import NoneType, UnionType
-from typing import Any, Iterable, Self, TypeAlias, Union, get_args
+from typing import Any, Iterable, Literal, TypeAlias, Union, get_args
 
 
 def py_type_string(t: type | TypeAlias) -> str:
@@ -48,6 +48,9 @@ def ts_type_string(t: type | TypeAlias) -> str:
             case "Any":
                 return "unknown"
 
+            case "Literal":
+                return " | ".join([f'"{a}"' for a in args])
+
             case "list":
                 if args:
                     return f"Array<{ts_type_string(args[0])}>"
@@ -68,6 +71,9 @@ def ts_type_string(t: type | TypeAlias) -> str:
     raise ValueError(f"Could not cast {t}")
 
 
+NO_DEFAULT = object()
+
+
 @dataclass
 class Property:
     name: str
@@ -75,6 +81,7 @@ class Property:
     type: type | TypeAlias
     nullable: bool
     required: bool
+    default: Any = NO_DEFAULT
 
     @property
     def py_type_string(self) -> str:
@@ -85,6 +92,24 @@ class Property:
     def ts_type_string(self) -> str:
         return ts_type_string(self.type)
 
+    @property
+    def ts_property_string(self) -> str:
+        return "{name}{optional}:{nullable} {type}".format(
+            name=self.name,
+            optional="?" if not self.required else "",
+            nullable=" null |" if self.nullable else "",
+            type=self.ts_type_string,
+        )
+
+    @property
+    def py_property_string(self) -> str:
+        return "{name}:{nullable} {type}{default}".format(
+            name=self.name,
+            nullable=" None |" if self.nullable or not self.required else "",
+            type=self.py_type_string,
+            default=" = None" if not self.required else "",
+        )
+
 
 @dataclass
 class Model:
@@ -94,11 +119,6 @@ class Model:
 
     def __post_init__(self):
         _MODEL_REGISTRY[self.name] = self
-
-    @classmethod
-    def from_ref(cls, ref: str) -> Self:
-        name = ref.split("/")[-1]
-        return _MODEL_REGISTRY[name]
 
     @property
     def py_properties(self) -> Iterable[Property]:
@@ -112,6 +132,37 @@ class Model:
 
 
 _MODEL_REGISTRY: dict[str, Model] = {}
+_ENUMS: dict[str, TypeAlias] = {}
+
+
+def resolve_ref(ref: str) -> Model | TypeAlias:
+    name = ref.split("/")[-1]
+    if name in _MODEL_REGISTRY:
+        return _MODEL_REGISTRY[name]
+    else:
+        return _ENUMS[name]
+
+
+@dataclass
+class Route:
+    path: str
+    method: str
+    description: str
+    content_type: str
+
+    path_params: dict[str, Property]
+    query_params: dict[str, Property]
+    request_body: Model | None
+
+    response: type | TypeAlias | Model
+
+    @property
+    def json_response(self) -> bool:
+        return self.response is not bytes
+
+    @property
+    def has_required_query_params(self) -> bool:
+        return any([p.required for p in self.query_params.values()])
 
 
 def python_type_from_schema(schema: dict) -> type | TypeAlias:
@@ -119,6 +170,8 @@ def python_type_from_schema(schema: dict) -> type | TypeAlias:
         case "boolean":
             return bool
         case "string":
+            if enum := schema.get("enum"):
+                return Literal[*enum]
             return str
         case "integer":
             return int
@@ -130,13 +183,15 @@ def python_type_from_schema(schema: dict) -> type | TypeAlias:
                 return list[Any]
 
             if "$ref" in items:
-                return list[Model.from_ref(items["$ref"])]
+                return list[resolve_ref(items["$ref"])]
 
             return list[python_type_from_schema(items)]
+        case "object":
+            return Any
         case None:
             if "allOf" in schema:
                 union_args = [
-                    Model.from_ref(item["$ref"])
+                    resolve_ref(item["$ref"])
                     if "$ref" in item
                     else python_type_from_schema(item)
                     for item in schema["allOf"]
@@ -146,10 +201,17 @@ def python_type_from_schema(schema: dict) -> type | TypeAlias:
 
                 return Union[*union_args]
 
+            if "$ref" in schema:
+                return resolve_ref(schema["$ref"])
+
     raise ValueError(f"Unknown type of {schema}")
 
 
 def model_from_schema(name: str, schema: dict) -> Model:
+    if schema.get("enum"):
+        _ENUMS[name] = python_type_from_schema(schema)
+        return _ENUMS[name]
+
     properties = {}
     for property_name, property_schema in schema["properties"].items():
         property = Property(
@@ -165,4 +227,68 @@ def model_from_schema(name: str, schema: dict) -> Model:
         name=name,
         description=schema.get("description", ""),
         properties=properties,
+    )
+
+
+def route_from_schema(path: str, method: str, schema: dict) -> Route:
+    query_params = {}
+    path_params = {}
+
+    for param_schema in schema.get("parameters", []):
+        parameter = Property(
+            name=param_schema["name"],
+            description=param_schema.get("description", ""),
+            type=python_type_from_schema(param_schema["schema"]),
+            required=param_schema["in"] == "path"
+            or param_schema["name"] in schema.get("required", []),
+            nullable=param_schema["in"] == "query"
+            and param_schema.get("nullable", False),
+            default=param_schema["schema"].get("default", NO_DEFAULT),
+        )
+
+        match param_schema["in"]:
+            case "query":
+                loc = query_params
+            case "path":
+                loc = path_params
+
+        loc[parameter.name] = parameter
+
+    if content_types := schema.get("requestBody", {}).get("content"):
+        if body_schema := content_types.get("application/json"):
+            content_type = "application/json"
+        elif body_schema := content_types.get("application/x-www-form-urlencoded"):
+            content_type = "application/x-www-form-urlencoded"
+
+        if "$ref" in body_schema["schema"]:
+            request_body = python_type_from_schema(body_schema["schema"])
+        else:
+            raise ValueError(f"Unknown request body schema {body_schema}")
+    else:
+        content_type = "application/json"
+        request_body = None
+
+    if ok := schema["responses"].get("200"):
+        if "Thumbnail image" == ok.get("description"):
+            response = bytes
+        else:
+            response = python_type_from_schema(
+                ok["content"]["application/json"]["schema"]
+            )
+    elif created := schema["responses"].get("201"):
+        response = python_type_from_schema(
+            created["content"]["application/json"]["schema"]
+        )
+    else:
+        raise ValueError(f"Unknown response schema {schema['responses']}")
+
+    return Route(
+        method=method,
+        path=path,
+        description=schema.get("description", ""),
+        content_type=content_type,
+        path_params=path_params,
+        query_params=query_params,
+        request_body=request_body,
+        response=response,
     )

@@ -1,16 +1,21 @@
 import typing
 
-{% for model in models.values() %}
+{% for name, enum in enums.items() %}
+{{ name }} = {{ enum | py_type_string }}
+{%- endfor %}
+
+
+{% for model in models.values() -%}
 @dataclass
 class {{ model.name }}:
 {%- if model.description %}
     """
-    {{ model.description }}
+    {{ model.description | indent(4) }}
     """
 {% endif %}
 
 {%- for property in model.py_properties %}
-    {{ property.name }}:{{ " None |" if property.nullable or not property.required }} {{ property.py_type_string }}{{ " = None" if not property.required }}
+    {{ property.py_property_string }}
 {%- if property.description %}
     """
     {{ property.description }}
