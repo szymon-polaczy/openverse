@@ -115,15 +115,15 @@ def make_insert_query(table: str, values: str) -> str:
 
 
 def _get_insert_query(image_table, values: dict):
-    # Append the required identifier
-    values[col.IDENTIFIER.db_name] = uuid.uuid4()
+    # Populate the required identifier if missing
+    values.setdefault(col.IDENTIFIER.db_name, uuid.uuid4())
 
     query_values = create_query_values(values, columns=IMAGE_TABLE_COLUMNS)
 
     return make_insert_query(image_table, query_values)
 
 
-def load_sample_data_into_image_table(image_table, postgres, records):
+def load_sample_data_into_image_table(image_table: str, postgres: PostgresRef, records: list[dict[str, str]]):
     for record in records:
         load_data_query = _get_insert_query(image_table, record)
         postgres.cursor.execute(load_data_query)

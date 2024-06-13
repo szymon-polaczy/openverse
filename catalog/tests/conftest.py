@@ -2,6 +2,8 @@ import pytest
 from airflow.models import DagRun, Pool, TaskInstance
 from airflow.utils.session import create_session
 
+from test.test_utils import sql
+
 
 def pytest_addoption(parser):
     """
@@ -59,3 +61,22 @@ def clean_db(sample_dag_id_fixture, sample_pool_fixture):
         session.query(Pool).filter(Pool.pool.startswith(sample_pool_fixture)).delete(
             synchronize_session="fetch"
         )
+
+
+@pytest.fixture
+def postgres_connection():
+    conn = psycopg2.connect(sql.POSTGRES_TEST_URI)
+    yield conn
+    conn.close()
+
+
+@pytest.fixture
+def postgres_cursor(postgres_connection):
+    cur = postgres_connection.cursor()
+    yield cur
+    cur.close()
+
+
+@pytest.fixture
+def postgres(postgres_connection, postgres_cursor) -> sql.PostgresRef:
+    yield sql.PostgresRef(cursor=cur, connection=conn)
