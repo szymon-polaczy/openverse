@@ -118,6 +118,8 @@ definePageMeta({
 const singleResultStore = useSingleResultStore()
 const relatedMediaStore = useRelatedMediaStore()
 
+const nuxtApp = useNuxtApp()
+
 const route = useRoute()
 const mediaId = computed(() => firstParam(route.params.id))
 
@@ -137,14 +139,19 @@ const image = ref<ImageDetail | null>(
     : null
 )
 const fetchingError = computed(() => singleResultStore.fetchState.fetchingError)
+const isLoadingOnClient = computed(
+  () => !(import.meta.server || nuxtApp.isHydrating)
+)
 
 /**
  * To make sure that image is loaded fast, we `src` to `image.thumbnail`,
  * and replace it with the provider image once the thumbnail is loaded.
  */
-const imageSrc = ref(image.value?.thumbnail)
+const imageSrc = ref(
+  isLoadingOnClient.value ? image.value?.url : image.value?.thumbnail
+)
 
-const isLoadingThumbnail = ref(true)
+const isLoadingThumbnail = ref(isLoadingOnClient.value)
 const showLoadingState = computed(() => {
   if (sketchFabUid.value) {
     return false
@@ -236,8 +243,6 @@ const onImageLoaded = (event: Event) => {
   }
 }
 
-const nuxtApp = useNuxtApp()
-
 const fetchImage = async () => {
   if (nuxtApp.isHydrating) {
     return image.value
@@ -246,8 +251,11 @@ const fetchImage = async () => {
   const fetchedImage = await singleResultStore.fetch(IMAGE, mediaId.value)
   if (fetchedImage) {
     image.value = fetchedImage
-    imageSrc.value = fetchedImage.thumbnail
+    imageSrc.value = isLoadingOnClient.value
+      ? fetchedImage.thumbnail
+      : fetchedImage.url
     if (import.meta.server) {
+      isLoadingThumbnail.value = false
       await relatedMediaStore.fetchMedia(
         IMAGE,
         fetchedImage.id,

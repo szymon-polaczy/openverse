@@ -101,6 +101,7 @@ export const useSingleResultStore = defineStore("single-result", {
       } else {
         this.mediaId = id
         this.mediaType = type
+        this.mediaItem = null
       }
     },
 
@@ -133,6 +134,8 @@ export const useSingleResultStore = defineStore("single-result", {
         return null
       }
       const existingItem = this.getExistingItem(type, id)
+      console.log("got existing item", existingItem)
+      console.log("for id", id)
       if (existingItem) {
         return existingItem
       }
